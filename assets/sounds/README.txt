@@ -1,0 +1,1 @@
+ضع ملفات الأصوات هنا: shoot.wav, explosion.wav, background_music.mp3, etc.
