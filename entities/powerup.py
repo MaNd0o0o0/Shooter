@@ -1,19 +1,39 @@
-"""powerup.py - العناصر القابلة للجمع"""
 from entities.base_entity import BaseEntity
-from config import POWERUP_SIZE, COIN_SIZE, SCROLL_SPEEDS
+from config import IMAGES_PATH
 
 class PowerUp(BaseEntity):
-    ICONS = {"speed":"powerup_speed.png","shield":"powerup_shield.png","bomb":"powerup_bomb.png","freeze":"powerup_freeze.png","health":"powerup_health.png"}
     def __init__(self, pos, power_type="speed", **kwargs):
-        super().__init__(source=self.ICONS.get(power_type,"coin.png"), size=POWERUP_SIZE, pos=pos, **kwargs)
-        self.power_type, self.speed = power_type, SCROLL_SPEEDS['items']
-    def update(self, dt): self.pos = (self.x - self.speed, self.y)
+        self.power_type = power_type
+        icons = {
+            "speed": f"{IMAGES_PATH}/powerup_speed.png",
+            "shield": f"{IMAGES_PATH}/powerup_shield.png",
+            "bomb": f"{IMAGES_PATH}/powerup_bomb.png",
+            "freeze": f"{IMAGES_PATH}/powerup_freeze.png",
+            "health": f"{IMAGES_PATH}/powerup_health.png"
+        }
+        icon = icons.get(power_type, f"{IMAGES_PATH}/coin.png")
+        super(PowerUp, self).__init__(source=icon, size=(80, 80), pos=pos, **kwargs)
+    
+    def update(self, dt=0.016):
+        self.pos = (self.x - 2, self.y)
+
 class Coin(BaseEntity):
     def __init__(self, pos, **kwargs):
-        super().__init__(source="coin.png", size=COIN_SIZE, pos=pos, **kwargs); self.speed = SCROLL_SPEEDS['items']
-    def update(self, dt): self.pos = (self.x - self.speed, self.y)
+        super(Coin, self).__init__(source=f"{IMAGES_PATH}/coin.png", size=(100, 100), pos=pos, **kwargs)
+    
+    def update(self, dt=0.016):
+        self.pos = (self.x - 2, self.y)
 
-class Collectible(BaseEntity):
-    def __init__(self, source, pos, **kwargs):
-        super().__init__(source=source, size=COIN_SIZE, pos=pos, **kwargs); self.speed = SCROLL_SPEEDS['items']
-    def update(self, dt): self.pos = (self.x - self.speed, self.y)
+class Gun(BaseEntity):
+    def __init__(self, pos, **kwargs):
+        super(Gun, self).__init__(source=f"{IMAGES_PATH}/gun.png", size=(100, 100), pos=pos, **kwargs)
+    
+    def update(self, dt=0.016):
+        self.pos = (self.x - 2, self.y)
+
+class Medical(BaseEntity):
+    def __init__(self, pos, **kwargs):
+        super(Medical, self).__init__(source=f"{IMAGES_PATH}/medical.png", size=(100, 100), pos=pos, **kwargs)
+    
+    def update(self, dt=0.016):
+        self.pos = (self.x - 2, self.y)

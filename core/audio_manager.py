@@ -1,50 +1,63 @@
-"""audio_manager.py - مدير الصوت"""
 from kivy.core.audio import SoundLoader
-from config import SOUNDS_DIRimport os
+from config import SOUNDS_PATH
 
-class AudioManager:
-    def __init__(self, sfx_volume=1.0, music_volume=0.5):
-        self.sfx_volume = sfx_volume
-        self.music_volume = music_volume
-        self.sfx_muted = self.music_muted = False
-        self.sounds = {}
-        self.background_music = self.boss_music = self._current_music = None
-        self._load_sounds()
-    
-    def _load_sounds(self):
-        sounds = {'shoot':'shoot.wav','explosion':'explosion.wav','coin':'coin.wav','gun':'gun.wav','heal':'heal.wav','powerup':'powerup.wav','bomb':'bomb.wav','levelup':'levelup.wav'}
-        for k,f in sounds.items():
-            s = SoundLoader.load(os.path.join(SOUNDS_DIR, f))
-            if s: s.volume = self.sfx_volume; self.sounds[k] = s
-    
-    def load_music(self, bg='background_music.mp3', boss='BossBattle.wav'):
-        for fname,attr in [(bg,'background_music'),(boss,'boss_music')]:
-            m = SoundLoader.load(os.path.join(SOUNDS_DIR, fname))
-            if m: m.volume = self.music_volume; m.loop = True; setattr(self, attr, m)
-    
-    def play_sfx(self, name):
-        if not self.sfx_muted and name in self.sounds:
+# ---------------- الأصوات ----------------
+shoot_sound = SoundLoader.load(f'{SOUNDS_PATH}/shoot.wav')
+explosion_sound = SoundLoader.load(f'{SOUNDS_PATH}/explosion.wav')
+coin_sound = SoundLoader.load(f'{SOUNDS_PATH}/coin.wav')
+gun_sound = SoundLoader.load(f'{SOUNDS_PATH}/gun.wav')
+heal_sound = SoundLoader.load(f'{SOUNDS_PATH}/heal.wav')
+powerup_sound = SoundLoader.load(f'{SOUNDS_PATH}/powerup.wav')
+bomb_sound = SoundLoader.load(f'{SOUNDS_PATH}/bomb.wav')
+levelup_sound = SoundLoader.load(f'{SOUNDS_PATH}/levelup.wav')
+
+try:
+    background_music = SoundLoader.load(f'{SOUNDS_PATH}/background_music.mp3')
+    if background_music:
+        background_music.volume = 0.30
+        background_music.loop = True
+except:
+    background_music = None
+
+boss_music = SoundLoader.load(f'{SOUNDS_PATH}/BossBattle.wav')
+if boss_music:
+    boss_music.loop = True
+
+def play_sound(sound, muted=False):
+    """تشغيل صوت مع التحقق من الكتم"""
+    if sound and not muted:
+        try:
+            if hasattr(sound, 'length') and sound.length > 0:
+                sound.play()
+        except:
+            pass
+
+def start_background_music(muted=False, boss_active=False):
+    """تشغيل موسيقى الخلفية"""
+    if boss_active:
+        if boss_music and not muted:
             try:
-                s = self.sounds[name]
-                if hasattr(s,'length') and s.length > 0: s.play()
-            except: pass
-    
-    def play_background(self, use_boss=False):
-        if self.music_muted: return
-        self.stop_music()
-        m = self.boss_music if use_boss else self.background_music
-        if m and hasattr(m,'length') and m.length > 0:
-            try: m.play(); self._current_music = m
-            except: pass
-    
-    def stop_music(self):
-        if self._current_music:
-            try: self._current_music.stop()
-            except: pass
-        self._current_music = None
-    
-    def toggle_sfx(self): self.sfx_muted = not self.sfx_muted; return self.sfx_muted
-    def toggle_music(self):
-        self.music_muted = not self.music_muted
-        if self.music_muted: self.stop_music()
-        return self.music_muted
+                if hasattr(boss_music, 'length') and boss_music.length > 0:
+                    boss_music.play()
+            except:
+                pass
+    else:
+        if background_music and not muted:
+            try:
+                if hasattr(background_music, 'length') and background_music.length > 0:
+                    background_music.play()
+            except:
+                pass
+
+def stop_background_music():
+    """إيقاف جميع الموسيقى"""
+    if background_music:
+        try:
+            background_music.stop()
+        except:
+            pass
+    if boss_music:
+        try:
+            boss_music.stop()
+        except:
+            pass

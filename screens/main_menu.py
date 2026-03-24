@@ -1,16 +1,59 @@
-"""main_menu.py - القائمة الرئيسية"""
 from kivy.uix.widget import Widget
+from kivy.uix.image import Image
+from kivy.graphics import Color, Rectangle
 from kivy.core.window import Window
 from widgets.fancy_button import FancyButton
-from config import WINDOW_WIDTH, WINDOW_HEIGHT, UI_COLORS
 
-class MainMenuScreen(Widget):
-    def __init__(self, app, **kwargs):
-        super().__init__(**kwargs); self.app = app; self._build_ui()
-    def _build_ui(self):
+class MainMenu(Widget):
+    def __init__(self, callbacks=None, game_started=False, **kwargs):
+        super(MainMenu, self).__init__(**kwargs)
+        self.callbacks = callbacks or {}
+        self.game_started = game_started
+        self.size = Window.size
+        self.pos = (0, 0)
+        
+        # خلفية شفافة
         with self.canvas:
-            from kivy.graphics import Color, Rectangle
-            Color(0.1,0.15,0.2,1); Rectangle(size=Window.size, pos=(0,0))
-        for text,on_rel,col,y in [("▶️ Play",lambda:self.app.navigate_to('game'),UI_COLORS['btn_normal'],WINDOW_HEIGHT*0.6),("⚙️ Settings",lambda:None,(0.3,0.7,0.3,1),WINDOW_HEIGHT*0.5),("🛒 Store",lambda:None,(0.9,0.6,0.1,1),WINDOW_HEIGHT*0.4),("🎨 Skins",lambda:None,(0.6,0.3,0.8,1),WINDOW_HEIGHT*0.3),("🏆 Achievements",lambda:None,(0.8,0.5,0.1,1),WINDOW_HEIGHT*0.2),("🚪 Exit",lambda:self.app.stop(),(0.8,0.2,0.2,1),WINDOW_HEIGHT*0.1)]:
-            btn = FancyButton(text=text, size=(220,70), pos=(WINDOW_WIDTH*0.35, y), normal_color=col, font_size='26sp')
-            btn.bind(on_release=on_rel); self.add_widget(btn)
+            Color(0, 0, 0, 0.7)
+            self.menu_bg = Rectangle(size=Window.size, pos=(0, 0))
+        
+        self.create_buttons()
+    
+    def create_buttons(self):
+        y_positions = [0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+        button_configs = []
+        
+        if self.game_started:
+            button_configs.append({
+                "text": "▶️ Resume",
+                "callback": self.callbacks.get('resume'),
+                "color": (0.2, 0.6, 0.9, 1)
+            })
+        else:
+            button_configs.append({
+                "text": "▶️ Play",
+                "callback": self.callbacks.get('play'),
+                "color": (0.2, 0.6, 0.9, 1)
+            })
+        
+        button_configs.extend([
+            {"text": "⚙️ Settings", "callback": self.callbacks.get('settings'), "color": (0.3, 0.7, 0.3, 1)},
+            {"text": "🛒 Store", "callback": self.callbacks.get('store'), "color": (0.9, 0.6, 0.1, 1)},
+            {"text": "🎨 Skins", "callback": self.callbacks.get('skins'), "color": (0.6, 0.3, 0.8, 1)},
+            {"text": "🏆 Achievements", "callback": self.callbacks.get('achievements'), "color": (0.8, 0.5, 0.1, 1)},
+            {"text": "🚪 Exit", "callback": self.callbacks.get('exit'), "color": (0.8, 0.2, 0.2, 1)}
+        ])
+        
+        for i, config in enumerate(button_configs):
+            btn = FancyButton(
+                text=config["text"],
+                size_hint=(None, None),
+                size=(220, 70),
+                pos=(Window.width * 0.35, Window.height * y_positions[i]),
+                background_color=config["color"],
+                color=(1, 1, 1, 1),
+                font_size=26
+            )
+            if config["callback"]:
+                btn.bind(on_release=config["callback"])
+            self.add_widget(btn)

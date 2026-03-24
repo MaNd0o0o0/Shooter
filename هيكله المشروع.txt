@@ -1,0 +1,112 @@
+My Game/
+│
+├── 📁 __pycache__/
+│   └── config.cpython-313.pyc (2.3KB)
+│
+├──  assets/                          # الموارد والوسائط
+│   ├── 📁 fonts/                        # الخطوط المستخدمة
+│   │
+│   ├── 📁 images/                       # الصور (31 ملف)
+│   │   ├── player.png (2.1MB)
+│   │   ├── enemy.png (1.8MB)
+│   │   ├── enemy_armor.png (439KB)
+│   │   ├── enemy_bomber.png (5.8MB)
+│   │   ├── enemy_fast.png (2.8MB)
+│   │   ├── enemy_ghost.png (628KB)
+│   │   ├── boss.png (346KB)
+│   │   ├── boss_electric.png (376KB)
+│   │   ├── boss_fire.png (6.8MB)
+│   │   ├── boss_ice.png (582KB)
+│   │   ├── boss_final.png (712KB)
+│   │   ├── bullet.png (62KB)
+│   │   ├── boss_bullet.png (2.3MB)
+│   │   ├── powerup_bomb.png (348KB)
+│   │   ├── powerup_freeze.png (2.5MB)
+│   │   ├── powerup_health.png (206KB)
+│   │   ├── powerup_shield.png (5.8MB)
+│   │   ├── powerup_speed.png (1.2MB)
+│   │   ├── explosion.png (2.7MB)
+│   │   ├── fire.png (1.8MB)
+│   │   ├── gun.png (5.8MB)
+│   │   ├── medical.png (9.2KB)
+│   │   ├── coin.png (2.1MB)
+│   │   ├── parachute.png (2.1MB)
+│   │   ├── bird.png (52KB)
+│   │   ├── bg.png (2.7MB)
+│   │   ├── city.png (190KB)
+│   │   ├── mountains.png (706KB)
+│   │   ├── clouds.png (4.1MB)
+│   │   ├── splash.png (1MB)
+│   │   └── README.txt (84B)
+│   │
+│   └──  sounds/                       # المؤثرات الصوتية (10 ملفات)
+│       ├── background_music.mp3 (11MB)
+│       ├── BossBattle.wav (4.4MB)
+│       ├── bomb.wav (376KB)
+│       ├── coin.wav (112KB)
+│       ├── explosion.wav (1.2MB)
+│       ├── gun.wav (41KB)
+│       ├── heal.wav (251KB)
+│       ├── powerup.wav (253KB)
+│       ├── shoot.wav (25KB)
+│       └── README.txt (91B)
+│
+├──  core/                            # النواة الأساسية للنظام
+│   ├── 📁 __pycache__/
+│   │   ├── __init__.cpython-313.pyc (168B)
+│   │   ├── audio_manager.cpython-313.pyc (4.4KB)
+│   │   └── save_manager.cpython-313.pyc (2.5KB)
+│   │
+│   ├── __init__.py (18B)
+│   ├── audio_manager.py (2.6KB)         # إدارة الموسيقى والمؤثرات
+│   └── save_manager.py (1.1KB)          # نظام حفظ وتحميل البيانات
+│
+├── 📁 data/                            # بيانات اللعبة
+│   └── game_data.json (112B)           # بيانات التقدم والإحصائيات
+│
+├──  entities/                        # الكيانات والعناصر في اللعبة
+│   ├── 📁 __pycache__/
+│   │
+│   ├── __init__.py (18B)
+│   ├── base_entity.py (859B)           # الكلاس الأساسي المشترك
+│   ├── player.py (1.6KB)               # كلاس اللاعب
+│   ├── enemy.py (2.4KB)                # كلاس الأعداء الأساسيين
+│   ├── boss.py (2KB)                   # كلاس الزعماء (Bosses)
+│   ├── bullet.py (1.7KB)               # كلاس الرصاص والقذائف
+│   ├── powerup.py (2.3KB)              # كلاس التعزيزات والقوى
+│   └── effects.py (1.4KB)              # المؤثرات البصرية
+│
+├── 📁 screens/                         # شاشات اللعبة
+│   ├── 📁 __pycache__/
+│   │   ├── __init__.cpython-313.pyc (171B)
+│   │   ├── main_menu.cpython-313.pyc (6KB)
+│   │   └── splash_screen.cpython-313.pyc (2.9KB)
+│   │
+│   ├── __init__.py (18B)
+│   ├── splash_screen.py (1.3KB)        # شاشة البداية (Splash)
+│   ├── main_menu.py (3KB)              # القائمة الرئيسية
+│   ├── game_screen.py (12KB)           # شاشة اللعب الرئيسية ⭐
+│   ├── settings_screen.py (2.6KB)      # شاشة الإعدادات
+│   └── store_screen.py (4.5KB)         # شاشة المتجر
+│
+├── 📁 utils/                           # الأدوات والدوال المساعدة
+│   ├── 📁 __pycache__/
+│   │   └── __init__.cpython-313.pyc
+│   │
+│   └── __init__.py (18B)
+│
+├──  widgets/                         # مكونات الواجهة الجاهزة
+│   ├── 📁 __pycache__/
+│   │   ├── __init__.cpython-313.pyc (171B)
+│   │   └── fancy_button.cpython-313.pyc (2.9KB)
+│   │
+│   ├── __init__.py (18B)
+│   ├── fancy_button.py (1.3KB)         # أزرار متطورة
+│   ├── joystick.py (1.7KB)             # عصا التحكم الافتراضية
+│   └── labels.py (903B)                # نصوص وعناوين مخصصة
+│
+├── 📄 main.py (3.7KB)                  # نقطة انطلاق اللعبة (Entry Point)
+├── 📄 config.py (1.6KB)                # إعدادات اللعبة والثوابت
+├── 📄 setup_project.py (35KB)          # سكريبت إعداد المشروع 📦
+── 📄 requirements.txt (30B)           # المكتبات المطلوبة
+└── 📄 game_data.json (112B)            # نسخة من بيانات اللعبة
