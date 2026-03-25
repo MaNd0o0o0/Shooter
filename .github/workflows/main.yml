@@ -50,4 +50,8 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: SpaceShooter-APK
+<<<<<<< HEAD
         path: bin/*.apk
+=======
+        path: bin/*.apk
+>>>>>>> aa0ea2b (final fix build)
