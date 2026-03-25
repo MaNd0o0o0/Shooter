@@ -21,12 +21,26 @@ jobs:
           git \
           zip \
           unzip \
-          openjdk-17-jdk
+          openjdk-17-jdk \
+          autoconf \
+          libtool \
+          pkg-config \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libtinfo5 \
+          cmake \
+          libffi-dev \
+          libssl-dev
 
     - name: Install Python dependencies
       run: |
         pip install --upgrade pip
         pip install buildozer cython
+
+    - name: Initialize buildozer
+      run: |
+        buildozer init || true
 
     - name: Build APK
       run: |
@@ -35,5 +49,5 @@ jobs:
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: apk
+        name: SpaceShooter-APK
         path: bin/*.apk
