@@ -14,13 +14,14 @@ levelup_sound = SoundLoader.load(f'{SOUNDS_PATH}/levelup.wav')
 try:
     background_music = SoundLoader.load(f'{SOUNDS_PATH}/background_music.mp3')
     if background_music:
-        background_music.volume = 0.30
+        background_music.volume = 1
         background_music.loop = True
 except:
     background_music = None
 
 boss_music = SoundLoader.load(f'{SOUNDS_PATH}/BossBattle.wav')
 if boss_music:
+    boss_music.volume =1
     boss_music.loop = True
 
 def play_sound(sound, muted=False):

@@ -5,18 +5,16 @@ from kivy.core.window import Window
 class Joystick(Widget):
     def __init__(self, **kwargs):
         super(Joystick, self).__init__(**kwargs)
-        self.base_size = 310
-        self.knob_size = 150
+        self.base_size = 220
+        self.knob_size = 100
         self.dx = 0
         self.dy = 0
         self.active = False
         self.touch_id = None  # ✅ تتبع معرف اللمسة
         
-        # ✅ تثبيت الجoystick في أسفل يسار الشاشة
-        self.fixed_pos = (200, 200)
+        self.fixed_pos = (150, 150)
         self.center_pos = self.fixed_pos
         
-        # رسم الجoystick في الموقع الثابت
         with self.canvas:
             Color(1, 1, 1, 0.25)
             self.base = Ellipse(
@@ -32,17 +30,14 @@ class Joystick(Widget):
             )
     
     def on_touch_down(self, touch):
-        # ✅ التحقق من لمس منطقة الجoystick فقط
         dist = ((touch.x - self.fixed_pos[0])**2 + (touch.y - self.fixed_pos[1])**2) ** 0.5
         if dist <= self.base_size/2:
             self.active = True
             self.touch_id = touch.uid  # ✅ حفظ معرف اللمسة
-            self.center_pos = self.fixed_pos
-            return True  # ✅ استهلاك اللمسة
+            return True
         return super(Joystick, self).on_touch_down(touch)
     
     def on_touch_move(self, touch):
-        # ✅ التحقق من أن اللمسة تنتمي للجoystick
         if not self.active or touch.uid != self.touch_id:
             return
         dx = touch.x - self.fixed_pos[0]
@@ -59,13 +54,11 @@ class Joystick(Widget):
         self.dy = dy/max_dist
     
     def on_touch_up(self, touch):
-        # ✅ التحقق من أن اللمسة تنتمي للجoystick
         if self.active and touch.uid == self.touch_id:
             self.active = False
             self.touch_id = None
             self.dx = 0
             self.dy = 0
-            # إعادة المقبض للمركز
             self.knob.pos = (self.fixed_pos[0] - self.knob_size/2, 
                              self.fixed_pos[1] - self.knob_size/2)
             return True

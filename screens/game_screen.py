@@ -4,7 +4,7 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.clock import Clock
 from kivy.core.window import Window
-from kivy.graphics import Color, Rectangle, Ellipse, RoundedRectangle
+from kivy.graphics import Color, Rectangle, Ellipse, RoundedRectangle, Line
 from kivy.animation import Animation
 from random import randint, choice
 import time
@@ -47,6 +47,9 @@ from entities.effects import Explosion, Particle
 from widgets.fancy_button import FancyButton
 from widgets.joystick import Joystick
 from widgets.labels import LevelUpLabel, AchievementPopup
+# ==================== استيرادات manegers ==================
+from managers.timer_manager import TimerManager
+from managers.enemy_manager import EnemyManager
 # ==================== استيرادات Config ====================
 from config import (
     IMAGES_PATH, BOSS_LEVELS, MAX_BULLETS_COUNT, 
@@ -66,12 +69,47 @@ class GameScreen(Widget):
         self.skins_screen = None
         self.achievements_screen = None
         self.logo_screen = None
+        self.wave_offset = 0
         
         self.initialize_game_state()
         self.load_game_data()
+        self.timer_manager = TimerManager(self)
+        self.enemy_manager = EnemyManager(self)
         
         Clock.schedule_once(lambda dt: self.show_logo(), 0.1)
-    
+        
+        with self.canvas.after:
+            self.shield_color = Color(0, 0.6, 1, 0)  # أزرق شفاف
+            self.shield_circle = Ellipse(pos=(0, 0), size=(0, 0))
+            
+        # خلفية
+        with self.canvas.after:
+            Color(0, 0, 0, 0.3)
+            self.coin_bg = Rectangle(
+                pos=(10, Window.height - 170),
+                size=(150, 70)
+            )
+        
+            # صورة الكوين
+            self.coin_icon = Image(
+                source=f"{IMAGES_PATH}/coin.png",
+                size_hint=(None, None),
+                size=(70, 70),
+                pos=(10, Window.height - 170)
+            )
+            self.add_widget(self.coin_icon)
+            
+            # رقم الكوين
+            self.coin_label = Label(
+                text="0",
+                font_size=40,
+                bold=True,
+                color=(1, 0.9, 0.2, 1),
+                pos=(80, Window.height - 175),
+                size_hint=(None, None)
+            )
+            self.add_widget(self.coin_label)
+                  
     def initialize_game_state(self):
         """تهيئة حالة اللعبة"""
         self.music_muted = False
@@ -134,6 +172,20 @@ class GameScreen(Widget):
         self.fire_button_pressed = False
         self.fire_delay = 0
         self.fire_button = None
+
+        # Skills
+        self.skill_ready = True
+        self.skill_cooldown = 0
+        self.skill_max_cooldown = 5
+
+        # Combo
+        self.combo = 0
+        self.combo_timer = 0
+
+        # Temp bullets boost
+        self.temp_bullet_timer = 0
+        self.base_bullets = 1
+
         self.fire_btn_touch = None
     
     def load_game_data(self):
@@ -296,7 +348,8 @@ class GameScreen(Widget):
         achievements_btn.bind(on_release=lambda x: self.show_achievements_menu())
         self.menu_overlay.add_widget(achievements_btn)
         
-        exit_btn = FancyButton(            text="🚪 Exit",
+        exit_btn = FancyButton(            
+          text="🚪 Exit",
             size_hint=(None, None),
             size=(220, 70),
             pos=(Window.width * 0.35, Window.height * 0.1),
@@ -352,7 +405,7 @@ class GameScreen(Widget):
         self.shield_active = False
         self.speed_active = False
         self.freeze_active = False
-        self.enemy_spawn_timer = 0
+        #self.enemy_spawn_timer = 0
         self.completed_boss_levels = set()
         self._boss_canvas_instructions = []
         self._shield_canvas_instructions = []
@@ -371,16 +424,36 @@ class GameScreen(Widget):
     
     def create_background(self):
         """إنشاء الخلفية"""
-        with self.canvas:
-            Color(0.6, 0.85, 1, 1)
-            self.sky = Rectangle(size=Window.size, pos=(0, 0))
-            Color(1, 0.9, 0.3, 1)
-            self.sun = Ellipse(pos=(Window.width - 300, Window.height - 350), size=(200, 200))
-            Color(0, 0.5, 0.9, 1)
-            self.sea = Rectangle(size=(Window.width, 750), pos=(0, 0))
+        self.sky = Image(
+            source=f"{IMAGES_PATH}/bg.png",  # صورة السماء
+            size=Window.size,
+            pos=(0, 0),
+            allow_stretch=True,
+            keep_ratio=False
+        )
+        self.add_widget(self.sky)
         
-        self.m1 = Image(source=f"{IMAGES_PATH}/mountains.png", size=(Window.width, 1500), pos=(0, Window.height - 1780))
-        self.m2 = Image(source=f"{IMAGES_PATH}/mountains.png", size=(Window.width, 1500), pos=(Window.width, Window.height - 1780))
+        self.sea1 = Image(
+            source=f"{IMAGES_PATH}/sea.png",  # حط صورة البحر
+            size=(Window.width, 300),
+            pos=(0, 0),
+            allow_stretch=True,
+            keep_ratio=False
+        )
+        
+        self.sea2 = Image(
+            source=f"{IMAGES_PATH}/sea.png",
+            size=(Window.width, 300),
+            pos=(Window.width, 0),
+            allow_stretch=True,
+            keep_ratio=False
+        )
+        
+        self.add_widget(self.sea1)
+        self.add_widget(self.sea2)
+        
+        self.m1 = Image(source=f"{IMAGES_PATH}/mountains.png", size=(Window.width, 1500), pos=(0, Window.height - 2300))
+        self.m2 = Image(source=f"{IMAGES_PATH}/mountains.png", size=(Window.width, 1500), pos=(Window.width, Window.height - 2300))
         self.add_widget(self.m1)
         self.add_widget(self.m2)
         
@@ -389,8 +462,8 @@ class GameScreen(Widget):
         self.add_widget(self.clouds1)
         self.add_widget(self.clouds2)
         
-        self.city1 = Image(source=f"{IMAGES_PATH}/city.png", size=(Window.width, 1500), pos=(0, 300))
-        self.city2 = Image(source=f"{IMAGES_PATH}/city.png", size=(Window.width, 1500), pos=(Window.width, 300))
+        self.city1 = Image(source=f"{IMAGES_PATH}/city.png", size=(Window.width, 1500), pos=(0, - 150))
+        self.city2 = Image(source=f"{IMAGES_PATH}/city.png", size=(Window.width, 1500), pos=(Window.width, - 150))
         self.add_widget(self.city1)
         self.add_widget(self.city2)
         
@@ -401,6 +474,8 @@ class GameScreen(Widget):
             self.add_widget(b)
     
     def update_background(self, dt=0.016):
+        import math
+      
         """تحديث خلفية اللعبة"""
         self.m1.pos = (self.m1.x - 0.4, self.m1.y)
         self.m2.pos = (self.m2.x - 0.4, self.m2.y)
@@ -425,6 +500,57 @@ class GameScreen(Widget):
         
         for b in self.birds:
             b.update(dt)
+            
+                # 🌊 تحريك البحر
+        sea_speed = 2.5
+        
+        self.sea1.x -= sea_speed
+        self.sea2.x -= sea_speed
+        
+        if self.sea1.right <= 0:
+            self.sea1.x = self.sea2.right
+        
+        if self.sea2.right <= 0:
+            self.sea2.x = self.sea1.right
+            
+        self.wave_offset += dt * 3
+
+        wave = math.sin(self.wave_offset) * 5
+        self.sea1.y = wave
+        self.sea2.y = wave
+            
+    def update_bar(self, bar_data, percent, dynamic_color=False):
+        percent = max(0, min(1, percent))
+    
+        target_width = bar_data["max_width"] * percent
+        current_width = bar_data["bar"].size[0]
+    
+        # Smooth animation
+        new_width = current_width + (target_width - current_width) * 0.2
+        bar_data["bar"].size = (new_width, bar_data["bar"].size[1])
+    
+        if dynamic_color:
+            r = 1 - percent
+            g = percent
+            bar_data["color"].rgba = (r, g, 0.2, 1)
+            
+    def create_bar(self, x, y, width, height, color):
+        
+        bar_data = {}
+    
+        with self.canvas.after:
+            Color(0.2, 0.2, 0.2, 0.8)
+            bg = RoundedRectangle(pos=(x, y), size=(width, height), radius=[8])
+    
+            bar_color = Color(*color)
+            bar = RoundedRectangle(pos=(x+2, y+2), size=(width-4, height-4), radius=[6])
+    
+        bar_data["bg"] = bg
+        bar_data["bar"] = bar
+        bar_data["color"] = bar_color
+        bar_data["max_width"] = width - 4
+    
+        return bar_data
     
     def create_player(self):
         """إنشاء اللاعب"""
@@ -444,24 +570,47 @@ class GameScreen(Widget):
             self.add_widget(e)
     
     def create_ui(self):
-        """إنشاء واجهة المستخدم"""
-        self.score_label = Label(text="Score: 0", pos=(20, Window.height - 40),                                  size_hint=(None, None), size=(200, 40), halign='left')
-        self.coin_label = Label(text="Coins: 0", pos=(20, Window.height - 80),
-                                 size_hint=(None, None), size=(200, 40), halign='left')
-        self.health_label = Label(text="Health: 100", pos=(20, Window.height - 120),
-                                   size_hint=(None, None), size=(200, 40), halign='left')
-        self.xp_label = Label(text="XP: 0/100", pos=(20, Window.height - 160),
-                               size_hint=(None, None), size=(200, 40), halign='left')
-        self.level_label = Label(text="Level: 1", pos=(20, Window.height - 200),
-                                  size_hint=(None, None), size=(200, 40), halign='left')
-        self.add_widget(self.score_label)
-        self.add_widget(self.coin_label)
-        self.add_widget(self.health_label)
-        self.add_widget(self.xp_label)
+      
+        # ❤️ Health
+        self.health_bar = self.create_bar(20, Window.height-50, 300, 22, (0.9,0.2,0.2,1))
+    
+        # ⭐ XP
+        self.xp_bar = self.create_bar(20, Window.height-80, 300, 16, (0.2,0.6,1,1))
+    
+        # ❤️ Health text
+        self.health_text = Label(
+            text="100/100",
+            pos=(30, Window.height-50),
+            size_hint=(None,None),
+            font_size=16
+        )
+        self.add_widget(self.health_text)
+    
+        # 💰 Coins
+        self.coins_label = Label(
+            text="💰 0",
+            pos=(20, Window.height-110),
+            size_hint=(None,None),
+            font_size=20
+        )
+        self.add_widget(self.coins_label)
+    
+        # 🧠 Level
+        self.level_label = Label(
+            text="Lv.1",
+            pos=(250, Window.height-110),
+            size_hint=(None,None),
+            font_size=20
+        )
         self.add_widget(self.level_label)
-        
-        self.menu_btn = Button(text="☰", size_hint=(None, None), size=(80, 80),
-                               pos=(Window.width - 100, Window.height - 100))
+    
+        # زر القائمة
+        self.menu_btn = Button(
+            text="☰",
+            size_hint=(None,None),
+            size=(80,80),
+            pos=(Window.width-100, Window.height-100)
+        )
         self.menu_btn.bind(on_release=lambda x: self.show_mainmenu())
         self.add_widget(self.menu_btn)
     
@@ -483,8 +632,8 @@ class GameScreen(Widget):
         # ✅ زر شفاف للضغط مع تتبع الحالة
         self.fire_btn_touch = Button(
             size_hint=(None, None),
-            size=(100, 100),
-            pos=(Window.width - 120, 100),
+            size=(150, 150),
+            pos=(Window.width - 140, 140),
             background_color=(0, 0, 0, 0)
         )
     
@@ -495,15 +644,6 @@ class GameScreen(Widget):
     
         self.add_widget(self.fire_btn_touch)
 
-    def start_firing(self):
-        """بدء إطلاق النار المستمر"""
-        self.fire_button_pressed = True
-
-    def stop_firing(self):
-        """إيقاف إطلاق النار"""
-        self.fire_button_pressed = False
-        self.fire_delay = 0
-    
     def start_firing(self):
         """بدء إطلاق النار المستمر"""
         self.fire_button_pressed = True
@@ -522,8 +662,13 @@ class GameScreen(Widget):
         self.update_bullets(dt)
         self.update_boss_bullets(dt)
         self.update_particles(dt)
-        self.update_timers(dt)
-        self.update_enemies(dt)
+        self.timer_manager.update(dt)
+        self.enemy_manager.spawn(dt)
+        self.enemy_manager.update(dt)
+        
+        self.coin_label.text = str(self.coins_count)
+    
+        #self.update_enemies(dt)
         self.update_collectibles()
         self.update_boss(dt)
         self.update_ui()
@@ -537,13 +682,27 @@ class GameScreen(Widget):
                 self.fire()
                 self.fire_delay = 0
         
-        self.draw_boss_health_bar()
+        if self.boss and self.boss.active:
+            self.draw_boss_health_bar()
         
         if self.health <= 0:
             self.health = 0
             self.game_over()
             return
-    
+          
+        if self.shield_active:
+            self.shield_color.a = 0.25  # درجة الشفافية (قلل/زود براحتك)
+        
+            size = max(self.player.width, self.player.height) * 1.6
+        
+            self.shield_circle.size = (size, size)
+            self.shield_circle.pos = (
+                self.player.center_x - size / 2,
+                self.player.center_y - size / 2
+            )
+        else:
+            self.shield_color.a = 0
+                    
     def update_player(self, dt):
         """تحديث حركة اللاعب"""
         speed_multiplier = 1.5 if self.speed_active else 1
@@ -560,7 +719,31 @@ class GameScreen(Widget):
         
         # ❌ تم إزالة إطلاق النار من الجoystick
     
+    
+    def use_skill(self):
+        if not self.skill_ready:
+            return
+        for e in self.enemies[:]:
+            self.create_particles(e.pos, color=(1,0,0,1), count=20)
+            self.remove_widget(e)
+            self.enemies.remove(e)
+            self.score += 10
+        self.skill_ready = False
+        self.skill_cooldown = self.skill_max_cooldown
+    
+    def take_damage(self, amount):
+        """تقليل صحة اللاعب مع مراعاة الشيلد"""
+        
+        if self.shield_active:
+            return  # 🛡 مفيش ضرر
+    
+        self.health -= amount
+    
+        if self.health < 0:
+            self.health = 0
+
     def fire(self):
+
         """إطلاق الرصاص"""
         angles = []
         n = self.bullets_count
@@ -618,72 +801,12 @@ class GameScreen(Widget):
                     self.remove_widget(p)
                     self.particles.remove(p)
     
-    def update_timers(self, dt):
-        """تحديث مؤقتات القوى"""
-        if self.speed_active:
-            self.speed_timer -= dt
-            if self.speed_timer <= 0:
-                self.speed_active = False
-        
-        if self.shield_active:
-            self.shield_timer -= dt
-            if self.shield_timer <= 0:
-                self.shield_active = False
-        
-        if self.freeze_active:
-            self.freeze_timer -= dt
-            if self.freeze_timer <= 0:
-                self.freeze_active = False
-    
-    def update_enemies(self, dt):
-        """تحديث الأعداء"""
-        self.enemy_spawn_timer += dt
-        spawn_chance = 15 + (self.game_level * 3)
-        spawn_chance = min(spawn_chance, 50)
-        
-        if (self.game_level >= 3 and
-            self.enemy_spawn_timer >= self.enemy_spawn_delay and
-            len(self.enemies) < min(MAX_ENEMIES, MAX_ENEMIES_ON_SCREEN) and
-            randint(1, 100) <= spawn_chance):
-            self.enemy_spawn_timer = 0
-            enemy_type = choice(list(enemy_map.keys()))
-            e = enemy_map.get(enemy_type, Enemy)()
-            e.pos = self._get_spawn_pos()
-            self.enemies.append(e)
-            self.add_widget(e)
-        
-        for e in self.enemies[:]:
-            if self.freeze_active:
-                continue
-            e.update(dt, game=self)            
-            if self.player.collide_widget(e):
-                if not self.shield_active:
-                    self.health -= e.damage
-                explosion = Explosion(pos=e.pos)
-                self.add_widget(explosion)
-                self.create_particles(e.pos, color=(1, 0.5, 0, 1), count=15)
-                self.play_sound(explosion_sound)
-                e.pos = (randint(Window.width, Window.width + 400), randint(250, Window.height - 150))
-            
-            for b in self.bullets[:]:
-                if b.collide_widget(e):
-                    e.health -= 1
-                    explosion = Explosion(pos=e.pos)
-                    self.add_widget(explosion)
-                    self.create_particles(e.pos, color=(1, 0.5, 0, 1), count=10)
-                    self.play_sound(explosion_sound)
-                    
-                    if e.health <= 0:
-                        self.handle_enemy_death(e)
-                    
-                    if b in self.bullets:
-                        self.remove_widget(b)
-                        self.bullets.remove(b)
-                        break
-    
     def handle_enemy_death(self, enemy):
         """✅ معالجة موت العدو"""
         self.total_kills += 1
+        self.combo += 1
+        self.combo_timer = 2
+
         rnd = randint(1, 100)
         
         # ✅ نسب ظهور محسنة
@@ -717,6 +840,30 @@ class GameScreen(Widget):
         
         enemy.pos = (randint(Window.width, Window.width + 400), randint(250, Window.height - 150))
         
+    def handle_bullet_hit(self, enemy, bullet):
+        """💥 لما الرصاصة تخبط العدو"""
+        
+        explosion = Explosion(pos=enemy.pos)
+        self.add_widget(explosion)
+    
+        self.create_particles(enemy.pos, color=(1, 0.5, 0, 1), count=10)
+    
+        self.play_sound(explosion_sound)
+        
+    def handle_enemy_hit(self, enemy):
+        """💥 لما العدو يخبط اللاعب"""
+        
+        explosion = Explosion(pos=enemy.pos)
+        self.add_widget(explosion)
+    
+        self.create_particles(enemy.pos, color=(1, 0.3, 0, 1), count=15)
+    
+        self.play_sound(explosion_sound)
+    
+        # إعادة العدو لمكان جديد
+        enemy.pos = self._get_spawn_pos()
+        
+        
     def update_collectibles(self):
         """تحديث العناصر القابلة للجمع"""
         for c in self.coins[:]:
@@ -731,6 +878,10 @@ class GameScreen(Widget):
             g.update()
             if self.player.collide_widget(g):
                 if self.bullets_count < 5:
+                    self.base_bullets = self.bullets_count + 1
+                    self.bullets_count += 1
+                    self.temp_bullet_timer = 8
+
                     self.bullets_count += 1
                     self.play_sound(gun_sound)
                 self.remove_widget(g)
@@ -850,7 +1001,7 @@ class GameScreen(Widget):
         if hasattr(self, '_boss_canvas_instructions'):
             for instr in self._boss_canvas_instructions:
                 try:
-                    self.canvas.before.remove(instr)
+                    self.canvas.after.remove(instr)
                 except:
                     pass
             self._boss_canvas_instructions = []
@@ -863,12 +1014,18 @@ class GameScreen(Widget):
         self.save_game_data()
     
     def update_ui(self):
-        """تحديث واجهة المستخدم"""
-        self.score_label.text = f"Score: {self.score}"        
-        self.coin_label.text = f"Coins: {self.coins_count}"
-        self.health_label.text = f"Health: {self.health}/{self.max_health}"
-        self.xp_label.text = f"XP: {self.xp}/{self.level * 100}"
-        self.level_label.text = f"Level: {self.level}"
+        # ❤️ Health
+        self.update_bar(self.health_bar, self.health/self.max_health, True)
+        self.health_text.text = f"{int(self.health)}/{self.max_health}"
+    
+        # ⭐ XP
+        self.update_bar(self.xp_bar, self.xp/(self.level*100))
+    
+        # 💰 Coins
+        self.coins_label.text = f"💰 {self.coins_count}"
+    
+        # 🧠 Level
+        self.level_label.text = f"Lv.{self.level}"
     
     def activate_powerup(self, power_type):
         """تفعيل القوة"""
@@ -882,6 +1039,10 @@ class GameScreen(Widget):
         elif power_type == "freeze":
             self.freeze_active = True
             self.freeze_timer = 5
+        
+            # ❄️ تأثير بصري فوري على كل الأعداء
+            for enemy in self.enemies:
+                enemy.opacity = 0.5
         elif power_type == "bomb":
             for enemy in self.enemies[:]:
                 explosion = Explosion(pos=enemy.pos)
@@ -972,24 +1133,29 @@ class GameScreen(Widget):
         self.game_started = False
     
     def draw_boss_health_bar(self):
-        """رسم شريط صحة البوس"""
+        """✅ رسم شريط صحة البوس"""
+        # مسح الشريط القديم
         if hasattr(self, '_boss_canvas_instructions'):
             for instr in self._boss_canvas_instructions:
                 try:
-                    self.canvas.before.remove(instr)
+                    self.canvas.after.remove(instr)
                 except:
                     pass
             self._boss_canvas_instructions = []
         
+        # إذا لم يكن هناك بوس نشط، لا ترسم شيئاً
         if not self.boss or not self.boss.active:
             return
         
+        # حساب نسبة الصحة
         bar_width = 400
         bar_height = 25
         health_percent = max(0, self.boss.health / self.boss.max_health)
         
+        # رسم الشريط
         self._boss_canvas_instructions = []
-        with self.canvas.before:
+        with self.canvas.after:
+            # خلفية الشريط (رمادية)
             Color(0.15, 0.15, 0.15, 0.9)
             bg = RoundedRectangle(
                 pos=(Window.width//2 - bar_width//2, Window.height - 55),
@@ -998,6 +1164,7 @@ class GameScreen(Widget):
             )
             self._boss_canvas_instructions.append(bg)
             
+            # شريط الصحة (أحمر)
             Color(1, 0.3, 0.3, 1)
             bar = RoundedRectangle(
                 pos=(Window.width//2 - bar_width//2 + 3, Window.height - 52),
@@ -1172,6 +1339,10 @@ class GameScreen(Widget):
                 self.health = min(self.health + 50, self.max_health)
             elif item['name'] == "+1 Bullet":
                 if self.bullets_count < 5:
+                    self.base_bullets = self.bullets_count + 1
+                    self.bullets_count += 1
+                    self.temp_bullet_timer = 8
+
                     self.bullets_count += 1
             elif item['name'] == "Speed Boost":
                 self.speed_active = True
