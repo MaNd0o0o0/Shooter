@@ -18,7 +18,7 @@ source.include_exts = py,png,jpg,kv,atlas,json,ttf,mp3,wav
 version = 1.0.0
 
 # المكتبات المطلوبة
-requirements = python3,kivy==2.3.0
+requirements = python3,kivy
 
 # اتجاه الشاشة
 orientation = landscape
