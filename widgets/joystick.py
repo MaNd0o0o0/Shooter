@@ -1,8 +1,14 @@
+"""
+joystick.py - عصا التحكم
+"""
+
 from kivy.uix.widget import Widget
 from kivy.graphics import Color, Ellipse
-from kivy.core.window import Window
+
 
 class Joystick(Widget):
+    """عصا تحكم تعمل باللمس"""
+    
     def __init__(self, **kwargs):
         super(Joystick, self).__init__(**kwargs)
         self.base_size = 220
@@ -10,7 +16,7 @@ class Joystick(Widget):
         self.dx = 0
         self.dy = 0
         self.active = False
-        self.touch_id = None  # ✅ تتبع معرف اللمسة
+        self.touch_id = None
         
         self.fixed_pos = (150, 150)
         self.center_pos = self.fixed_pos
@@ -19,13 +25,13 @@ class Joystick(Widget):
             Color(1, 1, 1, 0.25)
             self.base = Ellipse(
                 size=(self.base_size, self.base_size),
-                pos=(self.fixed_pos[0] - self.base_size/2, 
+                pos=(self.fixed_pos[0] - self.base_size/2,
                      self.fixed_pos[1] - self.base_size/2)
             )
             Color(0, 1, 0, 0.8)
             self.knob = Ellipse(
                 size=(self.knob_size, self.knob_size),
-                pos=(self.fixed_pos[0] - self.knob_size/2, 
+                pos=(self.fixed_pos[0] - self.knob_size/2,
                      self.fixed_pos[1] - self.knob_size/2)
             )
     
@@ -33,7 +39,7 @@ class Joystick(Widget):
         dist = ((touch.x - self.fixed_pos[0])**2 + (touch.y - self.fixed_pos[1])**2) ** 0.5
         if dist <= self.base_size/2:
             self.active = True
-            self.touch_id = touch.uid  # ✅ حفظ معرف اللمسة
+            self.touch_id = touch.uid
             return True
         return super(Joystick, self).on_touch_down(touch)
     
@@ -59,7 +65,7 @@ class Joystick(Widget):
             self.touch_id = None
             self.dx = 0
             self.dy = 0
-            self.knob.pos = (self.fixed_pos[0] - self.knob_size/2, 
+            self.knob.pos = (self.fixed_pos[0] - self.knob_size/2,
                              self.fixed_pos[1] - self.knob_size/2)
             return True
         return super(Joystick, self).on_touch_up(touch)

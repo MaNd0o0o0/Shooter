@@ -1,64 +1,91 @@
+"""
+audio_manager.py - إدارة الصوت والموسيقى
+"""
+
 from kivy.core.audio import SoundLoader
 from config import SOUNDS_PATH
+import os
 
-# ---------------- الأصوات ----------------
-shoot_sound = SoundLoader.load(f'{SOUNDS_PATH}/shoot.wav')
-explosion_sound = SoundLoader.load(f'{SOUNDS_PATH}/explosion.wav')
-coin_sound = SoundLoader.load(f'{SOUNDS_PATH}/coin.wav')
-gun_sound = SoundLoader.load(f'{SOUNDS_PATH}/gun.wav')
-heal_sound = SoundLoader.load(f'{SOUNDS_PATH}/heal.wav')
-powerup_sound = SoundLoader.load(f'{SOUNDS_PATH}/powerup.wav')
-bomb_sound = SoundLoader.load(f'{SOUNDS_PATH}/bomb.wav')
-levelup_sound = SoundLoader.load(f'{SOUNDS_PATH}/levelup.wav')
+# ==================== تحميل الأصوات ====================
+_sounds = {}
 
-try:
-    background_music = SoundLoader.load(f'{SOUNDS_PATH}/background_music.mp3')
-    if background_music:
-        background_music.volume = 1
-        background_music.loop = True
-except:
-    background_music = None
+def _load_sound(filename):
+    """تحميل صوت من الملف"""
+    path = f'{SOUNDS_PATH}/{filename}'
+    if os.path.exists(path):
+        return SoundLoader.load(path)
+    return None
 
-boss_music = SoundLoader.load(f'{SOUNDS_PATH}/BossBattle.wav')
+# تحميل جميع الأصوات
+shoot_sound = _load_sound('shoot.wav')
+explosion_sound = _load_sound('explosion.wav')
+coin_sound = _load_sound('coin.wav')
+gun_sound = _load_sound('gun.wav')
+heal_sound = _load_sound('heal.wav')
+powerup_sound = _load_sound('powerup.wav')
+bomb_sound = _load_sound('bomb.wav')
+levelup_sound = _load_sound('levelup.wav')
+
+# موسيقى الخلفية
+background_music = _load_sound('background_music.mp3')
+boss_music = _load_sound('BossBattle.wav')
+
+if background_music:
+    background_music.loop = True
+    background_music.volume = 0.7
 if boss_music:
-    boss_music.volume =1
     boss_music.loop = True
+    boss_music.volume = 0.8
+
+# حالة التشغيل
+_background_music_playing = False
+_current_music = None
+
 
 def play_sound(sound, muted=False):
     """تشغيل صوت مع التحقق من الكتم"""
     if sound and not muted:
         try:
-            if hasattr(sound, 'length') and sound.length > 0:
-                sound.play()
+            sound.play()
         except:
             pass
 
-def start_background_music(muted=False, boss_active=False):
-    """تشغيل موسيقى الخلفية"""
-    if boss_active:
-        if boss_music and not muted:
-            try:
-                if hasattr(boss_music, 'length') and boss_music.length > 0:
-                    boss_music.play()
-            except:
-                pass
-    else:
-        if background_music and not muted:
-            try:
-                if hasattr(background_music, 'length') and background_music.length > 0:
-                    background_music.play()
-            except:
-                pass
+
+def start_background_music(muted=False, is_boss=False):
+    """تشغيل الموسيقى الخلفية"""
+    global _background_music_playing, _current_music
+    
+    if muted:
+        return
+    
+    if _background_music_playing:
+        stop_background_music()
+    
+    music = boss_music if is_boss else background_music
+    if music:
+        try:
+            music.loop = True
+            music.play()
+            _background_music_playing = True
+            _current_music = music
+        except:
+            pass
+
 
 def stop_background_music():
-    """إيقاف جميع الموسيقى"""
-    if background_music:
+    """إيقاف الموسيقى الخلفية"""
+    global _background_music_playing, _current_music
+    
+    if _current_music:
         try:
-            background_music.stop()
+            _current_music.stop()
         except:
             pass
-    if boss_music:
-        try:
-            boss_music.stop()
-        except:
-            pass
+    
+    _background_music_playing = False
+    _current_music = None
+
+
+def cleanup_audio():
+    """تنظيف الصوت عند الإغلاق"""
+    stop_background_music()

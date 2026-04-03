@@ -1,70 +1,68 @@
-from entities.base_entity import BaseEntity
-from config import IMAGES_PATH
+"""
+powerup.py - الباوربس والعناصر
+"""
 
-# ---------------- PowerUp ----------------
-class PowerUp(BaseEntity):
+from kivy.uix.image import Image
+from config import IMAGES_PATH, POWERUP_IMAGES
+
+
+class PowerUp(Image):
+    """باور أب"""
+    
     def __init__(self, pos, power_type="speed", **kwargs):
         self.power_type = power_type
-
-        icons = {
-            "speed": f"{IMAGES_PATH}/powerup_speed.png",
-            "shield": f"{IMAGES_PATH}/powerup_shield.png",
-            "bomb": f"{IMAGES_PATH}/powerup_bomb.png",
-            "freeze": f"{IMAGES_PATH}/powerup_freeze.png",
-            "health": f"{IMAGES_PATH}/powerup_health.png"
-        }
-
-        icon = icons.get(power_type, f"{IMAGES_PATH}/coin.png")
-
-        super(PowerUp, self).__init__(
-            source=icon,
-            size=(80, 80),
-            pos=pos,
-            **kwargs
-        )
-
+        icon = POWERUP_IMAGES.get(power_type, "powerup_speed.png")
+        super().__init__(source=f"{IMAGES_PATH}/{icon}", size=(70, 70), pos=pos, **kwargs)
+        self.active = True
+    
     def update(self, dt=0.016):
-        # حركة بسيطة لليسار
-        self.x -= 2
+        """تحديث حركة الباور أب"""
+        if self.active:
+            self.x -= 2
+            if self.x < -100:
+                self.active = False
 
 
-# ---------------- Coin ----------------
-class Coin(BaseEntity):
+class Coin(Image):
+    """عملة"""
+    
     def __init__(self, pos, **kwargs):
-        super(Coin, self).__init__(
-            source=f"{IMAGES_PATH}/coin.png",
-            size=(100, 100),
-            pos=pos,
-            **kwargs
-        )
-
+        super().__init__(source=f"{IMAGES_PATH}/coin.png", size=(60, 60), pos=pos, **kwargs)
+        self.active = True
+    
     def update(self, dt=0.016):
-        self.x -= 2
+        """تحديث حركة العملة"""
+        if self.active:
+            self.x -= 2
+            if self.x < -100:
+                self.active = False
 
 
-# ---------------- Gun ----------------
-class Gun(BaseEntity):
+class Gun(Image):
+    """تطوير الرصاص"""
+    
     def __init__(self, pos, **kwargs):
-        super(Gun, self).__init__(
-            source=f"{IMAGES_PATH}/gun.png",
-            size=(100, 100),
-            pos=pos,
-            **kwargs
-        )
-
+        super().__init__(source=f"{IMAGES_PATH}/gun.png", size=(60, 60), pos=pos, **kwargs)
+        self.active = True
+    
     def update(self, dt=0.016):
-        self.x -= 2
+        """تحديث حركة التطوير"""
+        if self.active:
+            self.x -= 2
+            if self.x < -100:
+                self.active = False
 
 
-# ---------------- Medical ----------------
-class Medical(BaseEntity):
+class Medical(Image):
+    """علاج"""
+    
     def __init__(self, pos, **kwargs):
-        super(Medical, self).__init__(
-            source=f"{IMAGES_PATH}/medical.png",
-            size=(100, 100),
-            pos=pos,
-            **kwargs
-        )
-
+        super().__init__(source=f"{IMAGES_PATH}/medical.png", size=(60, 60), pos=pos, **kwargs)
+        self.active = True
+    
     def update(self, dt=0.016):
-        self.x -= 2
+        """تحديث حركة العلاج"""
+        if self.active:
+            self.x -= 2
+            if self.x < -100:
+                self.active = False

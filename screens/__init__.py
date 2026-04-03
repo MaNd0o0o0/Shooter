@@ -1,6 +1,19 @@
-"""Package init"""
-from .splash_screen import SplashScreen
-from .main_menu import MainMenu
-from .game_screen import GameScreen
-from .settings_screen import SettingsScreen
-from .store_screen import StoreScreen
+"""
+screens/__init__.py - شاشات اللعبة
+"""
+
+from screens.game_screen import GameScreen
+from screens.logo_screen import LogoScreen
+from screens.main_menu import MainMenu
+from screens.settings_screen import SettingsScreen
+from screens.splash_screen import SplashScreen
+from screens.store_screen import StoreScreen
+
+__all__ = [
+    'GameScreen',
+    'LogoScreen',
+    'MainMenu',
+    'SettingsScreen',
+    'SplashScreen',
+    'StoreScreen'
+]

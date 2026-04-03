@@ -1,131 +1,146 @@
+"""
+enemy.py - الأعداء (مع Knockback و Stun حقيقي)
+"""
+
 from kivy.core.window import Window
-from entities.base_entity import BaseEntity
+from kivy.uix.image import Image
+from kivy.clock import Clock
 from config import IMAGES_PATH
 from random import randint
 
-class EnemyFast(BaseEntity):
-    def __init__(self, **kwargs):
-        super(EnemyFast, self).__init__(
-            source=f"{IMAGES_PATH}/enemy_fast.png", 
-            size=(120, 120), 
-            **kwargs
-        )
-        self.pos = (randint(Window.width, Window.width + 400), randint(250, Window.height - 150))
-        self.speed = randint(6, 10)
+
+class BaseEnemy(Image):
+    """كلاس أساسي للأعداء"""
+
+    def __init__(self, image, size, **kwargs):
+        super().__init__(source=f"{IMAGES_PATH}/{image}", size=size, **kwargs)
+
         self.health = 1
         self.max_health = 1
+        self.speed = 4
         self.damage = 5
-    
-    def update(self, dt=0.016, game=None):
-        self.pos = (self.x - self.speed, self.y)
-        if self.right < 0:
-            self.pos = (randint(Window.width, Window.width + 400), randint(250, Window.height - 150))
+        self.reward = 10
+        self.active = True
+        self.frozen = False
+        self.cpp_id = -1
+        
+        # خصائص knockback و stun
+        self.stun_timer = 0
+        self.knockback_timer = 0
+        self.knockback_x = 0
+        self.knockback_y = 0
 
-class EnemyArmor(BaseEntity):
-    def __init__(self, **kwargs):
-        super(EnemyArmor, self).__init__(
-            source=f"{IMAGES_PATH}/enemy_armor.png", 
-            size=(180, 180), 
-            **kwargs
-        )
-        self.pos = (randint(Window.width, Window.width + 400), randint(250, Window.height - 150))
-        self.speed = 2
-        self.health = 5
-        self.max_health = 5
-        self.damage = 8
-    
-    def update(self, dt=0.016, game=None):
-        self.pos = (self.x - self.speed, self.y)
-        if self.right < 0:
-            self.pos = (randint(Window.width, Window.width + 400), randint(250, Window.height - 150))
+        self._reset_position()
 
-class EnemyBomber(BaseEntity):
-    def __init__(self, **kwargs):
-        super(EnemyBomber, self).__init__(
-            source=f"{IMAGES_PATH}/enemy_bomber.png", 
-            size=(150, 150), 
-            **kwargs
-        )
-        self.pos = (randint(Window.width, Window.width + 400), randint(250, Window.height - 150))
-        self.speed = 3        
-        self.health = 2
-        self.max_health = 2
-        self.damage = 10
-    
-    def update(self, dt=0.016, game=None):
-        self.pos = (self.x - self.speed, self.y)
-        if self.right < 0:
-            self.pos = (randint(Window.width, Window.width + 400), randint(250, Window.height - 150))
+    def _reset_position(self):
+        self.x = randint(Window.width, Window.width + 400)
+        self.y = randint(100, Window.height - 100)
 
-class EnemyGhost(BaseEntity):
-    def __init__(self, **kwargs):
-        super(EnemyGhost, self).__init__(
-            source=f"{IMAGES_PATH}/enemy_ghost.png", 
-            size=(140, 140), 
-            **kwargs
+    def update(self, dt, player):
+        if not self.active:
+            return
+        
+        # 💥 KNOCKBACK أولاً
+        if self.knockback_timer > 0:
+            self.x += self.knockback_x * dt
+            self.y += self.knockback_y * dt
+            self.knockback_timer -= dt
+            self.opacity = 0.7
+            return
+        
+        # 🛑 STUN ثانياً
+        if self.stun_timer > 0:
+            self.stun_timer -= dt
+            self.opacity = 0.5
+            return
+        
+        self.opacity = 1.0
+        self.x -= self.speed
+        
+        if self.right < 0:
+            self._reset_position()
+
+    def take_damage(self, amount):
+        self.health -= amount
+        return self.health <= 0
+
+    def freeze(self):
+        if hasattr(self, '_saved_speed'):
+            return
+        self._saved_speed = self.speed
+        self.speed = 0
+        self.frozen = True
+
+    def unfreeze(self):
+        if hasattr(self, '_saved_speed') and self._saved_speed is not None:
+            self.speed = self._saved_speed
+            self._saved_speed = None
+            self.frozen = False
+    
+    def hit_animation(self):
+        self.opacity = 0.5
+        Clock.schedule_once(lambda dt: setattr(self, 'opacity', 1), 0.1)
+
+
+class Enemy(BaseEnemy):
+    """العدو الرئيسي"""
+    
+    def __init__(self, enemy_type="soldier", **kwargs):
+        images = {
+            "soldier": ("enemy.png", (80, 80), 1, 4, 5, 10),
+            "armor": ("enemy_armor.png", (95, 95), 3, 2, 8, 25),
+            "fast": ("enemy_fast.png", (70, 70), 1, 6, 5, 15),
+            "bomber": ("enemy_bomber.png", (85, 85), 2, 3, 10, 20),
+            "ghost": ("enemy_ghost.png", (80, 80), 2, 4, 7, 18),
+        }
+
+        image, size, health, speed, damage, reward = images.get(
+            enemy_type, images["soldier"]
         )
-        self.pos = (randint(Window.width, Window.width + 400), randint(250, Window.height - 150))
-        self.speed = 4
-        self.health = 2
-        self.max_health = 2
-        self.visible = True
+
+        super().__init__(image, size, **kwargs)
+
+        self.health = health
+        self.max_health = health
+        self.speed = speed
+        self.damage = damage
+        self.reward = reward
+        self.enemy_type = enemy_type
         self.invisible_timer = 0
-        self.opacity = 1
-        self.damage = 7
-    
-    def update(self, dt=0.016, game=None):
-        self.pos = (self.x - self.speed, self.y)
-        self.invisible_timer += dt
-        if self.invisible_timer > 3:
-            self.visible = not self.visible
-            self.opacity = 1.0 if self.visible else 0.3
-            self.invisible_timer = 0
-        if self.right < 0:
-            self.pos = (randint(Window.width, Window.width + 400), randint(250, Window.height - 150))
-            self.opacity = 1
-            self.visible = True
+        self.visible = True
+        
+        self.stun_timer = 0
+        self.knockback_timer = 0
+        self.knockback_x = 0
+        self.knockback_y = 0
 
-class Enemy(BaseEntity):
+        self._reset_position()
+
+
+class EnemyFast(Enemy):
     def __init__(self, **kwargs):
-        super(Enemy, self).__init__(
-            source=f"{IMAGES_PATH}/enemy.png", 
-            size=(150, 150), 
-            **kwargs
-        )
-        self.pos = (randint(Window.width, Window.width + 400), randint(250, Window.height - 150))
-        self.speed = 4
-        self.health = 1
-        self.max_health = 1
-        self.damage = 10
-    def update(self, dt=0.016, game=None):
-        self.pos = (self.x - self.speed, self.y)
-        if self.right < 0:
-            self.pos = (randint(Window.width, Window.width + 400), randint(250, Window.height - 150))
+        super().__init__("fast", **kwargs)
 
-class Bird(BaseEntity):
+
+class EnemyArmor(Enemy):
     def __init__(self, **kwargs):
-        super(Bird, self).__init__(
-            source=f"{IMAGES_PATH}/bird.png", 
-            size=(80, 80), 
-            **kwargs
-        )
-        self.pos = (randint(Window.width, Window.width + 800), randint(Window.height - 300, Window.height - 150))
-        self.speed = randint(2, 5)
-    
-    def update(self, dt=0.016):  # ✅ إضافة dt كمعلمة اختيارية
-        self.pos = (self.x - self.speed, self.y)
-        if self.right < 0:
-            self.pos = (Window.width + randint(0, 200), randint(Window.height - 300, Window.height - 150))
-    
-    def update(self, dt=0.016):
-        self.pos = (self.x - self.speed, self.y)
-        if self.right < 0:
-            self.pos = (Window.width + randint(0, 200), randint(Window.height - 300, Window.height - 150))
+        super().__init__("armor", **kwargs)
 
-# ---------------- Enemy Map ----------------
+
+class EnemyBomber(Enemy):
+    def __init__(self, **kwargs):
+        super().__init__("bomber", **kwargs)
+
+
+class EnemyGhost(Enemy):
+    def __init__(self, **kwargs):
+        super().__init__("ghost", **kwargs)
+
+
 enemy_map = {
+    "soldier": lambda: Enemy("soldier"),
     "fast": EnemyFast,
     "armor": EnemyArmor,
     "bomber": EnemyBomber,
-    "ghost": EnemyGhost
+    "ghost": EnemyGhost,
 }

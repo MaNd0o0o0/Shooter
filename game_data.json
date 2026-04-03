@@ -1,11 +1,18 @@
 {
   "owned_skins": [
-    "default"
+    "default",
+    "blue"
   ],
-  "equipped_skin": "default",
+  "equipped_skin": "blue",
   "achievements": {},
-  "total_kills": 0,
-  "bosses_defeated": 38,
-  "speed_boost_uses": 39,
-  "completed_boss_levels": []
+  "total_kills": 207,
+  "bosses_defeated": 50,
+  "speed_boost_uses": 60,
+  "completed_boss_levels": [
+    3,
+    7,
+    9,
+    12,
+    15
+  ]
 }

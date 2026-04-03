@@ -1,2 +1,5 @@
-Kivy>=2.3.0
-Kivy-Garden>=0.1.5
+kivy==2.3.0
+kivymd==2.0.1dev0
+pygame==2.6.0
+pybind11==2.13.0
+numpy==1.26.0
